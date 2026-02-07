@@ -3,7 +3,7 @@
 <div align="center">
   
 ![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)  
-![License](https://img.shields.io/badge/license-MIT-green.svg)  
+![License](https://img.shields.io/badge/license-AGPLv3-green.svg)  
 ![Platform](https://img.shields.io/badge/platform-AstrBot-purple.svg)  
 
 一个智能、高度可定制的QQ群验证工具，通过动态数学题有效拦截机器人，保护您的群聊安宁  
@@ -124,7 +124,7 @@
 - 📧 Email：[2996603469@qq.com](mailto:2996603469@qq.com)  
 - 🔗 项目地址：[astrbot_plugin_Group-Verification_PRO](https://github.com/huntuo146/astrbot_plugin_Group-Verification_PRO)  
 
-本项目采用 [MIT 许可证](LICENSE) 开源。
+本项目采用 [AGPLv3 许可证](LICENSE) 开源。
 
 ---
 
