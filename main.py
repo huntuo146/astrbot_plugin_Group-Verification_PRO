@@ -11,9 +11,9 @@ from astrbot.api.star import Context, Star, register
 @register(
     "qq_member_verify",
     "huotuo146",
-    "QQ群成员动态验证插件",
-    "2.1.0",  # 版本号提升
-    "https://github.com/huntuo146/astrbot_plugin_Group-Verification"
+    "QQ群成员动态验证插件 PRO",
+    "2.1.1",
+    "https://github.com/huntuo146/astrbot_plugin_Group-Verification_PRO"
 )
 class QQGroupVerifyPlugin(Star):
     def __init__(self, context: Context, config: Dict[str, Any]):
@@ -21,8 +21,8 @@ class QQGroupVerifyPlugin(Star):
         self.context = context
 
         # --- 分群启用配置 ---
-        # 将配置中的群号统一转为字符串，防止类型不匹配
         raw_groups = config.get("enabled_groups", [])
+        # 兼容处理：确保群号是字符串列表
         self.enabled_groups: List[str] = [str(g) for g in raw_groups] if raw_groups else []
 
         # --- 时间控制 ---
@@ -61,10 +61,8 @@ class QQGroupVerifyPlugin(Star):
 
     def _is_group_enabled(self, gid: int) -> bool:
         """检查该群是否开启了验证功能"""
-        # 如果列表为空，默认所有群开启
         if not self.enabled_groups:
             return True
-        # 检查群号是否在白名单中
         return str(gid) in self.enabled_groups
 
     def _generate_math_problem(self) -> Tuple[str, int]:
@@ -83,34 +81,48 @@ class QQGroupVerifyPlugin(Star):
             question = f"{num1} - {num2} = ?"
             return question, answer
 
-    @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
+    # 这里移除了 strict 过滤，改用内部判断，防止漏掉 notice 事件
+    @filter.event_message_type(filter.EventMessageType.ALL) 
     async def handle_event(self, event: AstrMessageEvent):
+        # 1. 平台校验
         if event.get_platform_name() != "aiocqhttp":
             return
 
+        # 2. 安全校验 (修复报错的核心部分)
+        # 某些事件可能没有 message_obj 或 raw_message，必须判空
+        if not event.message_obj or not event.message_obj.raw_message:
+            return
+        
         raw = event.message_obj.raw_message
-        post_type = raw.get("post_type")
+        
+        # 确保 raw 是字典类型，防止后续 .get() 报错
+        if not isinstance(raw, dict):
+            return
 
-        # 获取群号用于判断权限
+        post_type = raw.get("post_type")
         gid = raw.get("group_id")
         
-        # 处理群组通知事件（入群/退群）
+        # 3. 处理入群/退群通知
         if post_type == "notice":
-            # 如果没有群号或者该群未启用插件，且不是主动退群(清理逻辑建议保留，防止内存泄漏，但为了严谨这里也做判断)
-            # 策略：如果群被禁用，是否还需要清理pending状态？建议清理，防止开启-禁用-开启过程中残留。
-            # 但为了逻辑简单，我们只拦截"入群"操作。退群操作无论是否启用都尝试清理（因为没有副作用）。
+            notice_type = raw.get("notice_type")
             
-            if raw.get("notice_type") == "group_increase":
+            if notice_type == "group_increase":
+                # 入群验证
                 if gid and not self._is_group_enabled(gid):
-                    return # 该群未启用，忽略入群
+                    return 
+                # 排除机器人自己进群的情况
+                if str(raw.get("user_id")) == str(event.get_self_id()):
+                    return
                 await self._process_new_member(event)
-            elif raw.get("notice_type") == "group_decrease":
+                
+            elif notice_type == "group_decrease":
+                # 退群清理
                 await self._process_member_decrease(event)
         
-        # 处理消息事件（回答验证）
+        # 4. 处理群消息（验证答案）
         elif post_type == "message" and raw.get("message_type") == "group":
             if gid and not self._is_group_enabled(gid):
-                return # 该群未启用，忽略消息
+                return
             await self._process_verification_message(event)
 
     async def _process_new_member(self, event: AstrMessageEvent):
@@ -123,6 +135,7 @@ class QQGroupVerifyPlugin(Star):
 
     async def _start_verification_process(self, event: AstrMessageEvent, uid: str, gid: int, is_new_member: bool):
         """为用户启动或重启验证流程"""
+        # 清理旧任务
         if uid in self.pending:
             old_task = self.pending[uid].get("task")
             if old_task and not old_task.done():
@@ -133,11 +146,13 @@ class QQGroupVerifyPlugin(Star):
 
         nickname = uid
         try:
+            # 尝试获取最新昵称
             user_info = await event.bot.api.call_action("get_group_member_info", group_id=gid, user_id=int(uid))
             nickname = user_info.get("card", "") or user_info.get("nickname", uid)
         except Exception as e:
             logger.warning(f"[QQ Verify] 获取用户 {uid} 昵称失败: {e}")
 
+        # 启动超时踢出任务
         task = asyncio.create_task(self._timeout_kick(uid, gid, nickname))
         self.pending[uid] = {"gid": gid, "answer": answer, "task": task}
 
@@ -150,7 +165,7 @@ class QQGroupVerifyPlugin(Star):
                 question=question,
                 timeout=self.verification_timeout // 60
             )
-        else:  # 回答错误后重试
+        else:
             prompt_message = self.wrong_answer_prompt.format(
                 at_user=at_user,
                 question=question
@@ -161,6 +176,8 @@ class QQGroupVerifyPlugin(Star):
     async def _process_verification_message(self, event: AstrMessageEvent):
         """处理群消息以进行验证"""
         uid = str(event.get_sender_id())
+        
+        # 如果该用户不在待验证列表中，直接忽略
         if uid not in self.pending:
             return
         
@@ -168,23 +185,30 @@ class QQGroupVerifyPlugin(Star):
         raw = event.message_obj.raw_message
         gid = self.pending[uid]["gid"]
         
-        # 再次检查群ID匹配（理论上handle_event已过滤，但为了安全）
+        # 校验群号
         current_gid = raw.get("group_id")
         if current_gid and str(current_gid) != str(gid):
             return
 
+        # 校验是否 @机器人
         bot_id = str(event.get_self_id())
-        at_me = any(seg.get("type") == "at" and str(seg.get("data", {}).get("qq")) == bot_id for seg in raw.get("message", []))
-
+        # 解析消息段中的 @
+        at_me = False
+        if isinstance(raw.get("message"), list):
+            for seg in raw.get("message"):
+                if seg.get("type") == "at" and str(seg.get("data", {}).get("qq")) == bot_id:
+                    at_me = True
+                    break
+        
         if not at_me:
             return
         
         try:
-            # 从消息中提取第一个数字作为答案
-            match = re.search(r'(\d+)', text)
-            if not match:
+            # 提取消息中的最后一个数字作为答案（兼容 "答案是15" 这种格式）
+            matches = re.findall(r'(\d+)', text)
+            if not matches:
                 return
-            user_answer = int(match.group(1))
+            user_answer = int(matches[-1]) 
         except (ValueError, TypeError):
             return
 
@@ -193,22 +217,24 @@ class QQGroupVerifyPlugin(Star):
         if user_answer == correct_answer:
             # --- 验证成功 ---
             logger.info(f"[QQ Verify] 用户 {uid} 在群 {gid} 验证成功。")
-            self.pending[uid]["task"].cancel()
-            self.pending.pop(uid, None)
+            if uid in self.pending:
+                self.pending[uid]["task"].cancel()
+                self.pending.pop(uid, None)
 
             nickname = raw.get("sender", {}).get("card", "") or raw.get("sender", {}).get("nickname", uid)
             welcome_msg = self.welcome_message.format(at_user=f"[CQ:at,qq={uid}]", member_name=nickname)
             await event.bot.api.call_action("send_group_msg", group_id=gid, message=welcome_msg)
             event.stop_event()
         else:
-            # --- 答案错误，重新开始 ---
+            # --- 验证失败，重试 ---
             logger.info(f"[QQ Verify] 用户 {uid} 在群 {gid} 回答错误。重新生成问题。")
             await self._start_verification_process(event, uid, gid, is_new_member=False)
             event.stop_event()
 
     async def _process_member_decrease(self, event: AstrMessageEvent):
         """处理成员离开"""
-        uid = str(event.message_obj.raw_message.get("user_id"))
+        raw = event.message_obj.raw_message
+        uid = str(raw.get("user_id"))
         if uid in self.pending:
             self.pending[uid]["task"].cancel()
             self.pending.pop(uid, None)
@@ -217,6 +243,7 @@ class QQGroupVerifyPlugin(Star):
     async def _timeout_kick(self, uid: str, gid: int, nickname: str):
         """处理超时、警告和踢出的协程"""
         try:
+            # 等待警告时间
             wait_before_warning = self.verification_timeout - self.kick_countdown_warning_time
             if wait_before_warning > 0:
                 await asyncio.sleep(wait_before_warning)
@@ -233,26 +260,39 @@ class QQGroupVerifyPlugin(Star):
                     await bot.api.call_action("send_group_msg", group_id=gid, message=warning_msg)
                 except Exception as e:
                     logger.warning(f"[QQ Verify] 发送超时警告失败: {e}")
+                
+                # 等待剩余时间
                 await asyncio.sleep(self.kick_countdown_warning_time)
 
             if uid not in self.pending: return
 
             # --- 验证最终超时 ---
             failure_msg = self.failure_message.format(at_user=at_user, member_name=nickname, countdown=self.kick_delay)
-            await bot.api.call_action("send_group_msg", group_id=gid, message=failure_msg)
+            try:
+                await bot.api.call_action("send_group_msg", group_id=gid, message=failure_msg)
+            except Exception:
+                pass
             
             await asyncio.sleep(self.kick_delay)
 
             if uid not in self.pending: return # 最终检查
             
-            await bot.api.call_action("set_group_kick", group_id=gid, user_id=int(uid), reject_add_request=False)
-            logger.info(f"[QQ Verify] 用户 {uid} ({nickname}) 验证超时，已从群 {gid} 踢出。")
-            
-            kick_msg = self.kick_message.format(at_user=at_user, member_name=nickname)
-            await bot.api.call_action("send_group_msg", group_id=gid, message=kick_msg)
+            # 执行踢人
+            try:
+                await bot.api.call_action("set_group_kick", group_id=gid, user_id=int(uid), reject_add_request=False)
+                logger.info(f"[QQ Verify] 用户 {uid} ({nickname}) 验证超时，已从群 {gid} 踢出。")
+                
+                kick_msg = self.kick_message.format(at_user=at_user, member_name=nickname)
+                await bot.api.call_action("send_group_msg", group_id=gid, message=kick_msg)
+            except Exception as e:
+                logger.error(f"[QQ Verify] 踢人失败 (权限不足?): {e}")
 
         except asyncio.CancelledError:
-            logger.info(f"[QQ Verify] 踢出任务已取消 (用户 {uid})。")
+            # 任务被取消（验证成功或用户退群）
+            pass
         except Exception as e:
-            logger.error(f"[QQ Verify] 踢出流程发生错误 (用户 {uid}): {e}")
-        
+            logger.error(f"[QQ Verify] 踢出流程发生未知错误 (用户 {uid}): {e}")
+        finally:
+            # 确保清理
+            if uid in self.pending:
+                self.pending.pop(uid, None)
