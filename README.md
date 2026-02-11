@@ -2,7 +2,7 @@
 
 <div align="center">
   
-![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)  
+![Version](https://img.shields.io/badge/version-2.1.2-blue.svg)  
 ![License](https://img.shields.io/badge/license-AGPLv3-green.svg)  
 ![Platform](https://img.shields.io/badge/platform-AstrBot-purple.svg)  
 
@@ -91,6 +91,12 @@
 
 <a id="changelog"></a>
 ## 📋 更新日志
+
+## ​v2.1.2 (2026-2-11) - 稳定性增强版
+​此版本重点解决了在复杂网络环境下或接收特殊事件时插件崩溃的问题。
+​🐛 修复：解决了在处理非标准事件时，由于 raw_message 为空导致的 'NoneType' object has no attribute 'get' 严重报错。
+​🔧 优化：将事件过滤器调整为 EventMessageType.ALL，确保能更稳健地捕获入群通知（Notice）事件。
+​🛡️ 健壮性：增加了防御性编程检查，确保在数据异常或平台 API 调用失败时插件不会崩溃，并能记录错误日志。
 
 ### v2.1.0 - 2025-12-21
 * [新增] **分群启用功能**：新增 `enabled_groups` 配置项，支持设置白名单模式。
