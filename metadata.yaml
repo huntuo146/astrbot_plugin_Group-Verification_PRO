@@ -1,7 +1,7 @@
 name: astrbot_plugin_Group-Verification_PRO
 display_name: QQ群成员动态数学题验证 PRO
 author: huotuo146
-version: 2.1.0
+version: 2.1.2
 description: |
   基于动态数学题的高级入群验证插件。
   核心功能：
