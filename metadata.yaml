@@ -1,7 +1,8 @@
 name: astrbot_plugin_Group_Verification_PRO
 display_name: QQ群成员动态数学题验证 PRO
 author: huotuo146
-version: 2.1.2
+version: 2.2.0
+short_desc: 新成员入群自动出题验证，超时或答错过多自动踢出。
 description: |
   基于动态数学题的高级入群验证插件。
   核心功能：
@@ -9,5 +10,10 @@ description: |
   2. 支持分群白名单模式，可指定特定群聊开启验证；
   3. 全自定义消息模板：支持验证成功、失败、超时警告、踢出公告等；
   4. 精确时间控制：支持自定义总超时、倒计时警告时机及踢出延迟；
-  5. 错题重置机制：回答错误自动更换题目并重置倒计时。
+  5. 答错重试上限：超过次数直接踢出，防止恶意刷屏；
+  6. 错题重置机制：回答错误自动更换题目，保留原有超时计时；
+  7. 多群隔离：同一用户同时加入多个群时验证互不干扰。
 repo_url: https://github.com/huntuo146/astrbot_plugin_Group-Verification_PRO
+support_platforms:
+  - aiocqhttp
+astrbot_version: ">=3.4.28"
