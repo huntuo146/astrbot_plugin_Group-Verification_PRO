@@ -5,6 +5,12 @@
     "default": [],
     "hint": "填入需要开启验证的群号（纯数字）。如果留空（默认），则对机器人所在的所有群生效。"
   },
+  "max_retries": {
+    "description": "最大答错重试次数",
+    "type": "int",
+    "default": 3,
+    "hint": "用户答错超过此次数后将直接踢出。设为 0 表示不限制。默认 3 次。"
+  },
   "verification_timeout": {
     "description": "验证总超时时间（秒）",
     "type": "int",
@@ -21,41 +27,41 @@
     "description": "验证超时后踢出延迟（秒）",
     "type": "int",
     "default": 5,
-    "hint": "发送“验证超时”消息后，等待多少秒再执行踢人操作。默认 5 秒。"
+    "hint": "发送"验证超时"消息后，等待多少秒再执行踢人操作。默认 5 秒。"
   },
   "new_member_prompt": {
     "description": "新成员入群提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 欢迎加入本群！请在 {timeout} 分钟内 @我 并回答下面的问题以完成验证：\n{question}",
     "hint": "用户入群时的提示语。可用变量: {at_user}, {member_name}, {question}, {timeout} (分钟)。"
   },
   "welcome_message": {
     "description": "验证成功提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 验证成功，欢迎你的加入！",
     "hint": "用户验证成功后发送的消息。可用变量: {at_user}, {member_name}。"
   },
   "wrong_answer_prompt": {
     "description": "答案错误提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 答案错误，请重新回答验证。这是你的新问题：\n{question}",
-    "hint": "用户回答错误后发送的消息，之后会自动生成新问题。可用变量: {at_user}, {question}。"
+    "hint": "用户回答错误后发送的消息。可用变量: {at_user}, {question}。"
   },
   "countdown_warning_prompt": {
     "description": "超时警告提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 验证即将超时，请尽快查看我（BOT）的验证消息进行人机验证！",
     "hint": "在验证即将超时前发送的警告。可用变量: {at_user}, {member_name}。"
   },
   "failure_message": {
     "description": "验证超时提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 验证超时，你将在 {countdown} 秒后被请出本群。",
     "hint": "用户因超时而验证失败后，踢出前发送的消息。可用变量: {at_user}, {member_name}, {countdown} (踢出延迟秒数)。"
   },
   "kick_message": {
     "description": "最终踢出提示语",
-    "type": "string",
+    "type": "text",
     "default": "{at_user} 因未在规定时间内完成验证，已被请出本群。",
     "hint": "用户被踢出后发送的公开消息。可用变量: {at_user}, {member_name}。"
   }
