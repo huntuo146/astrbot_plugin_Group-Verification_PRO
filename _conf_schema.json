@@ -21,19 +21,19 @@
     "description": "踢出前警告倒计时（秒）",
     "type": "int",
     "default": 60,
-    "hint": "在验证超时前多少秒发送警告消息。例如，设为60，则在超时前1分钟发送。设为0可禁用。默认 60 秒。"
+    "hint": "在验证超时前多少秒发送警告消息。例如设为 60，则在超时前 1 分钟发送。设为 0 可禁用。默认 60 秒。"
   },
   "kick_delay": {
     "description": "验证超时后踢出延迟（秒）",
     "type": "int",
     "default": 5,
-    "hint": "发送"验证超时"消息后，等待多少秒再执行踢人操作。默认 5 秒。"
+    "hint": "发送「验证超时」消息后，等待多少秒再执行踢人操作。默认 5 秒。"
   },
   "new_member_prompt": {
     "description": "新成员入群提示语",
     "type": "text",
     "default": "{at_user} 欢迎加入本群！请在 {timeout} 分钟内 @我 并回答下面的问题以完成验证：\n{question}",
-    "hint": "用户入群时的提示语。可用变量: {at_user}, {member_name}, {question}, {timeout} (分钟)。"
+    "hint": "用户入群时的提示语。可用变量: {at_user}, {member_name}, {question}, {timeout}（分钟）。"
   },
   "welcome_message": {
     "description": "验证成功提示语",
@@ -45,7 +45,7 @@
     "description": "答案错误提示语",
     "type": "text",
     "default": "{at_user} 答案错误，请重新回答验证。这是你的新问题：\n{question}",
-    "hint": "用户回答错误后发送的消息。可用变量: {at_user}, {question}。"
+    "hint": "用户回答错误后发送的消息，之后会自动生成新问题。可用变量: {at_user}, {question}。"
   },
   "countdown_warning_prompt": {
     "description": "超时警告提示语",
@@ -57,7 +57,7 @@
     "description": "验证超时提示语",
     "type": "text",
     "default": "{at_user} 验证超时，你将在 {countdown} 秒后被请出本群。",
-    "hint": "用户因超时而验证失败后，踢出前发送的消息。可用变量: {at_user}, {member_name}, {countdown} (踢出延迟秒数)。"
+    "hint": "用户因超时而验证失败后，踢出前发送的消息。可用变量: {at_user}, {member_name}, {countdown}（踢出延迟秒数）。"
   },
   "kick_message": {
     "description": "最终踢出提示语",
